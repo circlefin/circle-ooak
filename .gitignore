@@ -1,0 +1,12 @@
+# exclude .env files
+.env
+
+# exclude auto generated files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pyw
+*.pyz
+*.pywz
+.venv/
