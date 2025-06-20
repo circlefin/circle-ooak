@@ -54,7 +54,12 @@ class Action:
             if current.get('function_name') != incoming.get('function_name') and current.get('function') != incoming.get('function'):
                 if self.intent != intent:
                     return ManagerResponse(False, f"Function name mismatch: {current.get('function_name', current.get('function'))} vs {incoming.get('function_name', incoming.get('function'))}")
-            
+
+            # Compare instance
+            if current.get('instance') != incoming.get('instance'):
+                if self.intent != intent:
+                    return ManagerResponse(False, f"Instance mismatch: {current.get('instance')} vs {incoming.get('instance')}")
+
             # Compare arguments
             current_args = {k: v for k, v in current.get('args', current.get('arguments', {})).items()}
             incoming_args = {k: v for k, v in incoming.get('args', incoming.get('arguments', {})).items()}
@@ -174,7 +179,7 @@ class WorkflowManager(SecureContext):
 
     # override this method to get approval from UI
     def get_approval(self, workflow: Workflow) -> ManagerResponse:
-        self.log(f"Approving workflow {workflow.wfid} with intents: {workflow.actions}.\nOverride this method with your own approval logic.")
+        self.log(f"Approved workflow {workflow.wfid} with intents: {workflow.actions}.\nOverride this method with your own approval logic.")
         return ManagerResponse(True, 'Approved')
 
     # AI agents can call this function to get approval for a workflow

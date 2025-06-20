@@ -4,7 +4,7 @@
 # terms governing use, modification, and redistribution, is contained in the
 # file LICENSE.MIT at the root of the source code distribution tree.
 #
-# Portions Copyright (c) 2025, Circle Internet Financial, LTD.  All rights reserved
+# Portions Copyright (c) 2025, Circle Internet Group, Inc.  All rights reserved
 # Circle contributions are licensed under the Apache 2.0 License.
 #
 # SPDX-License-Identifier: Apache-2.0 AND MIT
