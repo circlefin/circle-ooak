@@ -138,24 +138,25 @@ python model_unit_test.py
 Here is sample output from one run:
 
 ```shell
- Ask a question or type 'exit': Have 0x111111 mint 10 USDC to 0x222222 and then have 0x222222 send 5 USDC to 0x333333.
+  Ask a question or type 'exit': Have 0x111111 mint 10 USDC to 0x222222 and then have 0x222222 send 5 USDC to 0x333333.
 
-LOG: Approving workflow 89d641b2-f7fb-48d3-bd28-d1fd07b74faa with intents: [{"function":"mint_usdc","arguments":{"minter":"0x111111","receiver":"0x222222","amount":10}}, {"function":"send_usdc","arguments":{"sender":"0x222222","receiver":"0x333333","amount":5}}].
+LOG: Approving workflow with intents: ['{"function": "mint_usdc", "arguments": {"minter": "0x111111", "receiver": "0x222222", "amount": 10}, "instance": "Secure Agent"}', '{"function": "send_usdc", "arguments": {"sender": "0x222222", "receiver": "0x333333", "amount": 5}, "instance": "Secure Agent"}']
+LOG: Approved workflow f0082344-018c-4d5c-856a-fb8989ab6bf2 with intents: [{"function": "mint_usdc", "arguments": {"minter": "0x111111", "receiver": "0x222222", "amount": 10}, "instance": "Secure Agent"}, {"function": "send_usdc", "arguments": {"sender": "0x222222", "receiver": "0x333333", "amount": 5}, "instance": "Secure Agent"}].
+Override this method with your own approval logic.
 
-LOG: Starting action {"function":"mint_usdc","arguments":{"minter":"0x111111","receiver":"0x222222","amount":10}}
+LOG: Starting action {"function": "mint_usdc", "arguments": {"minter": "0x111111", "receiver": "0x222222", "amount": 10}, "instance": "Secure Agent"}
 Minting 10 USDC by 0x111111 to 0x222222
-LOG: Finished action {"function":"mint_usdc","arguments":{"minter":"0x111111","receiver":"0x222222","amount":10}} with result txhash=0987654321
+LOG: Finished action {"function": "mint_usdc", "arguments": {"minter": "0x111111", "receiver": "0x222222", "amount": 10}, "instance": "Secure Agent"} with result txhash=0987654321
 
-LOG: Starting action {"function":"send_usdc","arguments":{"sender":"0x222222","receiver":"0x333333","amount":5}}
+LOG: Starting action {"function": "send_usdc", "arguments": {"sender": "0x222222", "receiver": "0x333333", "amount": 5}, "instance": "Secure Agent"}
 Sending 5 USDC from 0x222222 to 0x333333
-LOG: Finished action {"function":"send_usdc","arguments":{"sender":"0x222222","receiver":"0x333333","amount":5}} with result txhash=1234567890
+LOG: Finished action {"function": "send_usdc", "arguments": {"sender": "0x222222", "receiver": "0x333333", "amount": 5}, "instance": "Secure Agent"} with result txhash=1234567890
 
 LOG: Workflow completed successfully with result txhash=1234567890
 The transactions were successfully executed. Here are the transaction hashes:
 
-1. Mint 10 USDC from `0x111111` to `0x222222`: `0987654321`
-2. Send 5 USDC from `0x222222` to `0x333333`: `1234567890`
-
+1. Mint 10 USDC from `0x111111` to `0x222222`: `txhash=0987654321`
+2. Send 5 USDC from `0x222222` to `0x333333`: `txhash=1234567890`
 
 ```
 

@@ -18,6 +18,7 @@ import json
 import inspect
 from abc import ABC, abstractmethod
 from agents import (
+    Agent,
     RunContextWrapper,
     FunctionTool,
     default_tool_error_function,
@@ -112,14 +113,25 @@ def secure_tool(
         # Create a new on_invoke_tool that wraps the original with security checks
         original_on_invoke = base_tool.on_invoke_tool
 
-        def make_intent(json_data: dict[str, Any]) -> str:
+        def make_intent(json_data: dict[str, Any], instance: Any = None) -> str:
             # Remove wfid from arguments for the intent since it's not part of the actual function
             args_without_wfid = {k: v for k, v in json_data.items() if k != 'wfid'}
             formatted_data = {
                 "function": base_tool.name,
                 "arguments": args_without_wfid
             }
+            if instance is not None:
+                formatted_data["instance"] = get_instance_id(instance)
             return json.dumps(formatted_data)
+
+        def get_instance_id(instance: Any) -> str:
+            if isinstance(instance, Agent) or hasattr(instance, 'name'):
+                return instance.name
+            elif hasattr(instance, '__str__'):
+                return str(instance)
+            else:
+                return f"{instance.__class__.__name__}_{hex(id(instance))}"
+
 
         async def before_invoke_tool(ctx: RunContextWrapper[Any], wfid: str, intent: str) -> dict[str, Any]:
             security_hooks: SecureContext = ctx.context
@@ -133,7 +145,7 @@ def secure_tool(
             try:
                 # get intent from input
                 json_data: dict[str, Any] = json.loads(input) if input else {}
-                intent = make_intent(json_data)
+                intent = make_intent(json_data, instance)
 
                 # Extract wfid from the input JSON
                 wfid_value = json_data.get('wfid')
