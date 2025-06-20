@@ -1,7 +1,7 @@
 # Circle LOOFA: Lightweight Object-Oriented Framework for Agents
 
 ## License
-This work is licensed under Apache 2.0. see SPDX-License-Identifier in the file headings.
+This work is licensed under Apache 2.0. See SPDX-License-Identifier in the file headings.
 
 `SPDX-License-Identifier: Apache-2.0`
 
