@@ -28,7 +28,7 @@ from agents import (
     set_tracing_disabled,
 )
 from workflow_manager import WorkflowManager
-from wallet_agent import WalletInstanceAgent, WalletWorkflowAgent, Wallet
+from example.wallet_agent import WalletInstanceAgent, WalletWorkflowAgent, Wallet
 
 # load AI model from environment variables
 # these can be set in an .env file or in the environment
