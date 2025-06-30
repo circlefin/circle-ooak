@@ -1,4 +1,4 @@
-# Circle LOOFA: Lightweight Object-Oriented Framework for Agents
+# Circle OOAK: Object-Oriented Agent Kit
 
 ## License
 This work is licensed under Apache 2.0. See SPDX-License-Identifier in the file headings.
