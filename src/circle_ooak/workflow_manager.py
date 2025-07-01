@@ -18,7 +18,7 @@ import json
 import uuid
 import threading
 
-from secure_tool import SecureContext, SecureContextResponse
+from .secure_tool import SecureContext, SecureContextResponse
 
 
 class ManagerResponse(SecureContextResponse):

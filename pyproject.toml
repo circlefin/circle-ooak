@@ -19,8 +19,29 @@ classifiers = [
 license = "Apache-2.0"
 license-files = ["LICEN[CS]E*"]
 
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-asyncio",
+]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "build",
+    "twine",
+]
+
 [project.urls]
 Homepage = "https://github.com/circlefin/circle-ooak"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/circle_ooak"]
+
+[tool.pytest.ini_options]
+testpaths = ["test"]
+python_files = ["test_*.py", "*_test.py"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
 
 [build-system]
 requires = ["hatchling >= 1.26"]

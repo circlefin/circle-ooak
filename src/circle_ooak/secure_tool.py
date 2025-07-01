@@ -30,7 +30,7 @@ from agents.util._error_tracing import attach_error_to_current_span
 
 from typing import Any, Callable, Union, ParamSpec, Concatenate
 
-from agent_tool import agent_tool
+from .agent_tool import agent_tool
 
 
 class SecureContextResponse: 

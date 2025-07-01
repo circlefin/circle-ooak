@@ -20,9 +20,9 @@ from agents import (
     OpenAIChatCompletionsModel
 )
 from typing import Any
-from instance_agent import InstanceAgent
-from secure_tool import secure_tool, agent_tool
-from workflow_manager import WorkflowManager
+from circle_ooak.instance_agent import InstanceAgent
+from circle_ooak.secure_tool import secure_tool, agent_tool
+from circle_ooak.workflow_manager import WorkflowManager
 
 
 class Wallet:
@@ -38,7 +38,6 @@ class Wallet:
         return "txhash=0987654321"
 
 
-# define a mock wallet
 class WalletInstanceAgent(InstanceAgent):
     def __init__(self, name: str, model: OpenAIChatCompletionsModel, wallets: dict[str, Wallet]):
         self.wallets = wallets

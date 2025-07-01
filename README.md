@@ -14,12 +14,12 @@ This project creates an extension to the OpenAI Agents SDK.
 - The `@agent_tool` decorator can be used with object instance methods instead of `@function_tool` which only
 supports static functions. 
 - The `@secure_tool` decorator  can be used instead of the `@agent_tool` decorator
-to add before/after hooks to your tool code.
+to add before/after hooks to your tool code. 
 - An `InstanceAgent` that can use `@agent_tool` and `@secure_tool`. An `InstanceAgent` is a subclass of
-a regular `Agent` and can interact with other agents via handoffs and guardrails.
+a regular OpenAI Agents SDK `Agent` and can interact with other agents via handoffs and guardrails.
 
 
-We implemented a Workflow Manager that implements the abstract `SecurityContext`,
+This package includes a `WorkflowManager` that implements the abstract `SecurityContext`,
 that checks that intended actions have been approved.
 
 1. Create intent. The agent calls the @secure_tool function with `wfid=None` argument. Instead of
@@ -29,7 +29,15 @@ approves the list of intents and returns a WorkflowId.
 3. Execute. The agent now calls the @secure_tools in the correct order with the WorkflowId. The
 WorkflowManager ensures that each subsequent function call matches the approved workflow.
 
+Sample code can be found at `https://github.com/circlefin/circle-ooak/example`
+
+Below is an exmple of a `WalletWorkflowAgent`.
+
 ```python
+from circle_ooak.instance_agent import InstanceAgent
+from circle_ooak.secure_tool import secure_tool
+from circle_ooak.workflow_manager import WorkflowManager
+
 class WalletWorkflowAgent(InstanceAgent):
     instructions = """
     You help users execute Ethereum transactions. Do the following steps to help the user:
@@ -79,30 +87,36 @@ agent = WalletWorkflowAgent(
 )
 ```
 
-You can look at model code in the file `wallet_agent.py`.
 
 ## Setup Python environment
-You will need Python. 
+Install the `circle-ooak` package and other dependencies:
 
-Create a virtual environment and install requirements:
 ```shell
-python -m venv .venv
-source .venv/bin/activate
+pip install circle-ooak
+pip install dotenv openai openai-agents
+```
+
+Alternatively, you can clone the GitHub Repo and install using 
+the `requirements.txt` file:
+```shell
+git clone http://github.com/circlefin/circle-ooak
+cd circle-ooak
 pip install -r requirements.txt
-deactivate
 ```
 
-Activate your virtual environment
+We recommend you use a virtual environment:
 ```shell
+# create an environment
+python -m venv .venv
+
+# activate the environment
 source .venv/bin/activate
-```
 
-Decativate your virtual environment
-```shell
+# de-activate the environment
 deactivate
 ```
 
-## Setup LLM
+## Setup Environment
 Create an `.env` file. You must obtain an OpenAI API key.
 
 ```shell
@@ -117,21 +131,22 @@ OPENAI_MODEL=gpt-4o
 ```
 
 ## Run demo
-All agents are defined in the file `wallet_agent.py`. To test them, 
-activate the virtual environment and run the `simple_agent.py` program.
+You must setup your LLM using the `.env` file to run the demo.
 
 ```shell
+# Download demo
+git clone http://github.com/circlefin/circle-ooak
+cd circle-ooak
+pip install -r requirements.txt
+
 # To run a Wallet Workflow Agent 
-cd src
-python run_agent.py 
+python example/run_agent.py
 
 # To run a Wallet Instance Agent 
-cd src
-python run_agent.py instance
+python example/run_agent.py instance
 
 # To run unit tests
-cd src
-python model_unit_test.py
+python -m pytest test/model_unit_test.py -v
 ```
 
 Here is sample output from one run:
@@ -170,5 +185,5 @@ Agent tools with the `@secure_tool` or `@agent_tool` decorators can be tested th
 We include a model unit test file.
 
 ```shell
-python model_unit_test.py
+python -m pytest test/model_unit_test.py -v
 ```
