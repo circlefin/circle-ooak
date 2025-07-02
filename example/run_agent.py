@@ -20,14 +20,13 @@ import os
 import sys
 
 from openai import AsyncOpenAI
-
-
 from agents import (
     OpenAIChatCompletionsModel,
     Runner,
     set_tracing_disabled,
 )
-from workflow_manager import WorkflowManager
+from circle_ooak.workflow_manager import WorkflowManager
+
 from wallet_agent import WalletInstanceAgent, WalletWorkflowAgent, Wallet
 
 # load AI model from environment variables

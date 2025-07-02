@@ -10,3 +10,4 @@ __pycache__/
 *.pyz
 *.pywz
 .venv/
+dist/

@@ -18,10 +18,10 @@ import json
 import unittest
 
 from agents import RunContextWrapper
-from workflow_manager import WorkflowManager
-from instance_agent import InstanceAgent
-from secure_tool import secure_tool
-from agent_tool import agent_tool
+from circle_ooak.workflow_manager import WorkflowManager
+from circle_ooak.instance_agent import InstanceAgent
+from circle_ooak.secure_tool import secure_tool
+from circle_ooak.agent_tool import agent_tool
 
 # define two static functions that are secure tools that we want to test
 @secure_tool
