@@ -6,7 +6,7 @@ authors = [
 ]
 description = "OOAK: Object Oriented Agent Kit"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
     "python-dotenv",
     "openai",
