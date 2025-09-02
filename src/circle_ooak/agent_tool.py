@@ -45,7 +45,7 @@ ToolErrorFunction = Callable[[RunContextWrapper[Any], Exception], MaybeAwaitable
 
 
 def agent_tool(
-    func: ToolFunction[...] | None = None,
+    func: ToolFunction[ToolParams] | None = None,
     *,
     name_override: str | None = None,
     description_override: str | None = None,
@@ -54,7 +54,7 @@ def agent_tool(
     failure_error_function: ToolErrorFunction | None = default_tool_error_function,
     strict_mode: bool = True,
     is_enabled: bool | Callable[[RunContextWrapper[Any], Agent[Any]], MaybeAwaitable[bool]] = True,
-) -> FunctionTool | Callable[[ToolFunction[...]], FunctionTool]:
+) -> FunctionTool | Callable[[ToolFunction[ToolParams]], FunctionTool]:
     """
     Decorator to create a FunctionTool from a function. By default, we will:
     1. Parse the function signature to create a JSON schema for the tool's parameters.
@@ -87,7 +87,7 @@ def agent_tool(
             from the LLM at runtime.
     """
 
-    def _create_agent_tool(the_func: ToolFunction[...]) -> FunctionTool:
+    def _create_agent_tool(the_func: ToolFunction[ToolParams]) -> FunctionTool:
         # Check if this is a method (first parameter is 'self')
         sig = inspect.signature(the_func)
         params = list(sig.parameters.values())
@@ -219,7 +219,7 @@ def agent_tool(
         return _create_agent_tool(func)
 
     # Otherwise, we were used as @function_tool(...), so return a decorator
-    def decorator(real_func: ToolFunction[...]) -> FunctionTool:
+    def decorator(real_func: ToolFunction[ToolParams]) -> FunctionTool:
         return _create_agent_tool(real_func)
 
     return decorator

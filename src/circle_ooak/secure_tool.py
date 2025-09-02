@@ -59,14 +59,14 @@ ToolErrorFunction = Callable[[RunContextWrapper[Any], Exception], MaybeAwaitable
 
 
 def secure_tool(
-    func: ToolFunction[...] | None = None,
+    func: ToolFunction[ToolParams] | None = None,
     *,
     name_override: str | None = None,
     description_override: str | None = None,
     docstring_style: DocstringStyle | None = None,
     use_docstring_info: bool = True,
     failure_error_function: ToolErrorFunction | None = default_tool_error_function,
-) -> FunctionTool | Callable[[ToolFunction[...]], FunctionTool]:
+) -> FunctionTool | Callable[[ToolFunction[ToolParams]], FunctionTool]:
     """
     A secure version of the function_tool decorator that adds additional security checks and hooks.
     It inherits all functionality from function_tool and adds:
@@ -87,7 +87,7 @@ def secure_tool(
             error message will be sent and instead an Exception will be raised.
     """
 
-    def _create_secure_function_tool(the_func: ToolFunction[...]) -> FunctionTool:
+    def _create_secure_function_tool(the_func: ToolFunction[ToolParams]) -> FunctionTool:
         # First create the base function tool
         system_prompt = f"""
         This is a secure tool. You must include a 'wfid' field in your function call arguments.
@@ -204,7 +204,7 @@ def secure_tool(
         return _create_secure_function_tool(func)
 
     # Otherwise, we were used as @secure_tool(...), so return a decorator
-    def decorator(real_func: ToolFunction[...]) -> FunctionTool:
+    def decorator(real_func: ToolFunction[ToolParams]) -> FunctionTool:
         return _create_secure_function_tool(real_func)
 
     return decorator
