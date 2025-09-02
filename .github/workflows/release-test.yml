@@ -3,7 +3,7 @@ name: Test Release
 on:
   pull_request:
     branches:
-      - main
+      - masterß
   workflow_call:
 
 jobs:
