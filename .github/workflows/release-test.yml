@@ -30,7 +30,7 @@ jobs:
             - name: Install circle-ooak
               run: |
                 python -m build
-                python -m pip install dist/circle_ooak-0.0.1-py3-none-any.whl
+                python -m pip install -e .
 
             - name: Run tests
               run: python -m pytest test/model_unit_test.py
