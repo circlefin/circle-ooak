@@ -1,3 +1,2 @@
 python-dotenv
-openai
 openai-agents==0.2.6

@@ -102,6 +102,7 @@ the `requirements.txt` file:
 git clone http://github.com/circlefin/circle-ooak
 cd circle-ooak
 pip install -r requirements.txt
+pip install circle-ooak
 ```
 
 We recommend you use a virtual environment:
