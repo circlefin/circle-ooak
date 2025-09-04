@@ -21,7 +21,7 @@ jobs:
     if: github.event_name == 'push'
     uses: circlefin/circle-public-github-workflows/.github/workflows/conventional-commit-release.yaml@v1
     with:
-      release_type: go
+      release_type: python
       additional_unqualified_tags: true
       extra_tags: stable
     secrets:
