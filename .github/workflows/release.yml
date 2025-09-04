@@ -9,6 +9,8 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  actions: write
+  issues: write
 
 jobs:
   test:
@@ -24,6 +26,9 @@ jobs:
       extra_tags: stable
     secrets:
       RELEASE_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    permissions:
+      contents: write
+      pull-requests: write
 
   pypi-publish:
     name: Publish to PyPI
