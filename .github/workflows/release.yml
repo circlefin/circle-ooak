@@ -21,14 +21,13 @@ jobs:
     if: github.event_name == 'push'
     uses: circlefin/circle-public-github-workflows/.github/workflows/conventional-commit-release.yaml@v1
     with:
-      release_type: python
+      release_type: go
       additional_unqualified_tags: true
       extra_tags: stable
     secrets:
-      RELEASE_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    permissions:
-      contents: write
-      pull-requests: write
+      RELEASE_TOKEN: ${{ secrets.PUBLIC_RELEASES_TOKEN }}
+      RELEASE_ACTOR_GPG_PRIVATE_KEY: ${{ secrets.PUBLIC_RELEASES_GPG_PRIVATE_KEY }}
+      RELEASE_ACTOR_GPG_PASSPHRASE: ${{ secrets.PUBLIC_RELEASES_GPG_PASSPHRASE }}
 
   pypi-publish:
     name: Publish to PyPI
