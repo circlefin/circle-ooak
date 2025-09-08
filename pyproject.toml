@@ -1,6 +1,6 @@
 [project]
 name = "circle-ooak"
-version = "0.0.1"
+version = "0.1.0"
 authors = [
   { name="Mira Belenkiy", email="mira.belenkiy@circle.com" },
 ]
