@@ -29,9 +29,9 @@ approves the list of intents and returns a WorkflowId.
 3. Execute. The agent now calls the @secure_tools in the correct order with the WorkflowId. The
 WorkflowManager ensures that each subsequent function call matches the approved workflow.
 
-Sample code can be found at `https://github.com/circlefin/circle-ooak/example`
+Sample code can be found at `https://github.com/circlefin/circle-ooak/tree/main/example`
 
-Below is an exmple of a `WalletWorkflowAgent`.
+Below is an example of a `WalletWorkflowAgent`.
 
 ```python
 from circle_ooak.instance_agent import InstanceAgent
@@ -149,6 +149,10 @@ python example/run_agent.py instance
 # To run unit tests
 python -m pytest test/model_unit_test.py -v
 ```
+
+## Community Examples
+- Trustless USDC Agents (OOAK + zkML) — community example by @hshadab demonstrating a zkML-gated `@secure_tool` flow that proves an ONNX inference, generates Groth16 calldata, verifies on-chain, and then executes USDC actions. Includes a simple Node UI and Python demo. See `docs/community-examples/agentkit-circle-ooak.md`.
+  - Repo: https://github.com/hshadab/agentkit/tree/main/Circle-OOAK
 
 Here is sample output from one run:
 
