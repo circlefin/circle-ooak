@@ -25,6 +25,50 @@ class ManagerResponse(SecureContextResponse):
     def __init__(self, approved: bool, msg: str = None):
         super().__init__(approved, msg)
 
+
+
+
+_ALLOWED_INTENT_KEYS = frozenset({"function", "arguments", "instance"})
+
+
+def _validate_intent_data(intent: dict, label: str) -> ManagerResponse | None:
+    unknown = set(intent.keys()) - _ALLOWED_INTENT_KEYS
+    if unknown:
+        return ManagerResponse(
+            False,
+            f"{label} intent has unknown keys: {', '.join(sorted(unknown))}",
+        )
+    if "function" not in intent:
+        return ManagerResponse(False, f"{label} intent is missing required key: function")
+    if not isinstance(intent["function"], str) or not intent["function"]:
+        return ManagerResponse(False, f"{label} intent 'function' must be a non-empty string")
+    if "arguments" in intent and not isinstance(intent["arguments"], dict):
+        return ManagerResponse(False, f"{label} intent 'arguments' must be an object")
+    if "instance" in intent and not isinstance(intent["instance"], str):
+        return ManagerResponse(False, f"{label} intent 'instance' must be a string")
+    return None
+
+
+def _validate_intent_string(intent: str, label: str) -> ManagerResponse | None:
+    try:
+        data = json.loads(intent)
+    except json.JSONDecodeError:
+        return ManagerResponse(False, f"{label} intent is not valid JSON")
+    if not isinstance(data, dict):
+        return ManagerResponse(False, f"{label} intent must be a JSON object")
+    return _validate_intent_data(data, label)
+
+
+def _validate_intents(intents: list[str]) -> ManagerResponse | None:
+    if not intents:
+        return ManagerResponse(False, "Workflow must contain at least one intent")
+    for index, intent in enumerate(intents):
+        error = _validate_intent_string(intent, f"Intent {index + 1}")
+        if error is not None:
+            return error
+    return None
+
+
 class Action:
     enum = {
         'not_started': 'not_started',
@@ -45,43 +89,45 @@ class Action:
         return self.intent
 
     def has_matching_intent(self, intent: str) -> ManagerResponse:
-        # Compare JSON contents instead of string format to handle spacing differences
         try:
             current = json.loads(self.intent)
             incoming = json.loads(intent)
-            
-            # Compare function names
-            if current.get('function_name') != incoming.get('function_name') and current.get('function') != incoming.get('function'):
-                if self.intent != intent:
-                    return ManagerResponse(False, f"Function name mismatch: {current.get('function_name', current.get('function'))} vs {incoming.get('function_name', incoming.get('function'))}")
-
-            # Compare instance
-            if current.get('instance') != incoming.get('instance'):
-                if self.intent != intent:
-                    return ManagerResponse(False, f"Instance mismatch: {current.get('instance')} vs {incoming.get('instance')}")
-
-            # Compare arguments
-            current_args = {k: v for k, v in current.get('args', current.get('arguments', {})).items()}
-            incoming_args = {k: v for k, v in incoming.get('args', incoming.get('arguments', {})).items()}
-            
-            # Check if arguments match
-            if current_args != incoming_args:
-                if self.intent != intent:
-                    # Debugging output for mismatches
-                    for key in set(current_args.keys()) | set(incoming_args.keys()):
-                        if key not in current_args:
-                            return ManagerResponse(False, f"Missing argument in current intent: {key}")
-                        elif key not in incoming_args:
-                            return ManagerResponse(False, f"Missing argument in incoming intent: {key}")
-                        elif current_args[key] != incoming_args[key]:
-                            return ManagerResponse(False, f"Argument '{key}' mismatch: {current_args[key]} vs {incoming_args[key]}")
-            
-            # If we get here, the intents match
-            return ManagerResponse(True, 'Intents match')
-            
         except json.JSONDecodeError:
-             # Fall back to string comparison if JSON parsing fails
-            return ManagerResponse(self.intent == intent, 'Intents match')
+            approved = self.intent == intent
+            msg = "Intents match" if approved else "Intent string mismatch"
+            return ManagerResponse(approved, msg)
+
+        for label, data in (("Approved", current), ("Incoming", incoming)):
+            error = _validate_intent_data(data, label)
+            if error is not None:
+                return error
+
+        if current["function"] != incoming["function"]:
+            return ManagerResponse(
+                False,
+                f"Function name mismatch: {current['function']} vs {incoming['function']}",
+            )
+
+        if current.get("instance") != incoming.get("instance"):
+            return ManagerResponse(
+                False,
+                f"Instance mismatch: {current.get('instance')} vs {incoming.get('instance')}",
+            )
+
+        current_args = current.get("arguments", {})
+        incoming_args = incoming.get("arguments", {})
+        for key in set(current_args.keys()) | set(incoming_args.keys()):
+            if key not in current_args:
+                return ManagerResponse(False, f"Missing argument in approved intent: {key}")
+            if key not in incoming_args:
+                return ManagerResponse(False, f"Missing argument in incoming intent: {key}")
+            if current_args[key] != incoming_args[key]:
+                return ManagerResponse(
+                    False,
+                    f"Argument '{key}' mismatch: {current_args[key]} vs {incoming_args[key]}",
+                )
+
+        return ManagerResponse(True, "Intents match")
 
 class Workflow:
     enum = {
@@ -105,7 +151,6 @@ class Workflow:
         if self.verbose:
             print("LOG: " + message)
 
-    # todo: make thread safe
     def start(self, intent: str) -> ManagerResponse:
         with self._lock:  # Use lock to ensure thread safety
             # check if workflow is approved
@@ -118,8 +163,15 @@ class Workflow:
             
             # check if current action matches intent
             current_action = self.actions[self.current_action]
-            if not current_action.has_matching_intent(intent):
-                return ManagerResponse(False, 'Cannot start action, current action does not match intent: ' + current_action.intent + ' with status: ' + current_action.status)
+            match = current_action.has_matching_intent(intent)
+            if not match.approved:
+                return ManagerResponse(
+                    False,
+                    'Cannot start action, current action does not match intent: '
+                    + current_action.intent
+                    + '. '
+                    + match.msg,
+                )
             
             # check if current action is not started
             current_action = self.actions[self.current_action]
@@ -132,40 +184,59 @@ class Workflow:
             return ManagerResponse(True, 'Action started successfully')
 
     def complete(self, intent: str, result: any) -> ManagerResponse:
-        with self._lock:  # Use lock to ensure thread safety
-            # check if we've completed all actions
+        with self._lock:
+            # Records handler outcome. Authorization already happened in start().
             if self.current_action >= len(self.actions):
-                return ManagerResponse(False, 'All actions have been completed')
-                
-            # check if current action matches intent
+                self.log("complete called with no pending action")
+                return ManagerResponse(True, "No action to complete")
+
             current_action = self.actions[self.current_action]
-            if not current_action.has_matching_intent(intent):
-                return ManagerResponse(False, 'Cannot complete action, current action does not match intent: ' + current_action.intent + ' with status: ' + current_action.status)
-            
-            # check if action is in progress
-            if current_action.status != Action.enum['in_progress']:
-                return ManagerResponse(False, 'Cannot complete action, current action is not in progress: ' + current_action.intent + ' with status: ' + current_action.status)
-            
-            # update result and status
-            current_action.result = result
-            current_action.status = Action.enum['completed']
-            
-            # Move to next action
-            self.current_action += 1
-            
-            # If we've completed all actions, update workflow status
-            if self.current_action >= len(self.actions):
-                self.status = Workflow.enum['completed']
-                self.result = result
-                self.log(f"Finished action {current_action.intent} with result {result}")
-                self.log(f"Workflow completed successfully with result {result}")
-                return ManagerResponse(True, 'Workflow completed successfully')
-            else:
-                # Reset the next action's status to not_started if it exists
+            if current_action.status == Action.enum['in_progress']:
+                current_action.result = result
+                current_action.status = Action.enum['completed']
+                self.current_action += 1
+
+                if self.current_action >= len(self.actions):
+                    self.status = Workflow.enum['completed']
+                    self.result = result
+                    self.log(f"Finished action {current_action.intent} with result {result}")
+                    self.log(f"Workflow completed successfully with result {result}")
+                    return ManagerResponse(True, "Workflow completed successfully")
+
                 next_action = self.actions[self.current_action]
                 next_action.status = Action.enum['not_started']
                 self.log(f"Finished action {current_action.intent} with result {result}")
-                return ManagerResponse(True, 'Action completed successfully, ready for next action')
+                return ManagerResponse(True, "Action completed successfully, ready for next action")
+
+            self.log(
+                "complete called for action not in progress: "
+                + current_action.intent
+                + " with status: "
+                + current_action.status
+            )
+            return ManagerResponse(True, "Action already finalized")
+
+    def fail(self, intent: str, error: str) -> ManagerResponse:
+        with self._lock:
+            # Best-effort failure recording. Must not raise or reject after handler errors.
+            if self.current_action < len(self.actions):
+                current_action = self.actions[self.current_action]
+                if current_action.status == Action.enum['in_progress']:
+                    current_action.result = error
+                    current_action.status = Action.enum['failed']
+                    self.status = Workflow.enum['failed']
+                    self.result = error
+                    self.log(f"Failed action {current_action.intent} with error {error}")
+                else:
+                    self.log(
+                        "fail called for action not in progress: "
+                        + current_action.intent
+                        + " with status: "
+                        + current_action.status
+                    )
+            else:
+                self.log("fail called with no pending action")
+            return ManagerResponse(True, "Action failed")
 
 class WorkflowManager(SecureContext):
     def __init__(self, verbose: bool = False, managed_context: dict[str, any] = None):
@@ -185,6 +256,10 @@ class WorkflowManager(SecureContext):
     # AI agents can call this function to get approval for a workflow
     def approve(self, intents: list[str]) -> ManagerResponse:
         self.log(f"Approving workflow with intents: {intents}")
+        validation = _validate_intents(intents)
+        if validation is not None:
+            return validation
+
         # generate workflow and wfid
         workflow = Workflow(intents, self.verbose)
         wfid = workflow.wfid
@@ -215,12 +290,22 @@ class WorkflowManager(SecureContext):
         workflow = self.workflows[wfid]
         return workflow.complete(intent, result)
 
+    def fail(self, wfid: str, intent: str, error: str) -> ManagerResponse:
+        if wfid not in self.workflows:
+            return ManagerResponse(False, 'Workflow not found')
+
+        workflow = self.workflows[wfid]
+        return workflow.fail(intent, error)
+
     # Implementation of SecureContext interface
     def before_invoke_tool(self, wfid: str, intent: str) -> ManagerResponse:
         return self.start(wfid, intent)
     
     def after_invoke_tool(self, wfid: str, intent: str, result: str) -> ManagerResponse:
         return self.complete(wfid, intent, result)
+
+    def on_invoke_tool_failure(self, wfid: str, intent: str, error: str) -> ManagerResponse:
+        return self.fail(wfid, intent, error)
 
 
 

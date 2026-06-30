@@ -19,19 +19,18 @@ to add before/after hooks to your tool code.
 a regular OpenAI Agents SDK `Agent` and can interact with other agents via handoffs and guardrails.
 
 
-This package includes a `WorkflowManager` that implements the abstract `SecurityContext`,
+This package includes a `WorkflowManager` that implements the abstract `SecureContext`,
 that checks that intended actions have been approved.
 
 1. Create intent. The agent calls the @secure_tool function with `wfid=None` argument. Instead of
 executing the function, it returns an intent: a json representation of the function call.
-2. Get Approval. The agent calls the WorkflowManager with a list of intents. The WorkflowManager
-approves the list of intents and returns a WorkflowId.
+2. Get Approval. The agent calls the WorkflowManager with a list of intents. The manager invokes `get_approval()` (which you override to connect your UX or policy) and, if approved, returns a WorkflowId.
 3. Execute. The agent now calls the @secure_tools in the correct order with the WorkflowId. The
 WorkflowManager ensures that each subsequent function call matches the approved workflow.
 
 Sample code can be found at `https://github.com/circlefin/circle-ooak/example`
 
-Below is an exmple of a `WalletWorkflowAgent`.
+Below is an example of a `WalletWorkflowAgent`.
 
 ```python
 from circle_ooak.instance_agent import InstanceAgent
@@ -68,7 +67,7 @@ class WalletWorkflowAgent(InstanceAgent):
             return f"Workflow not approved: {response.msg}"
 
     @secure_tool
-    def send_usdc(self, ctxt: RunContextWrapper[WorkflowManager], wfid: str, sender: str, receiver: str, amount: int):
+    def send_usdc(self, ctxt: RunContextWrapper[WorkflowManager], sender: str, receiver: str, amount: int):
         wallet = self.wallets[sender]
         if wallet is None:
             return f"Wallet {sender} not found"
@@ -86,6 +85,45 @@ agent = WalletWorkflowAgent(
     wallets=wallets
 )
 ```
+
+## Approval logic
+
+OOAK is a framework: it handles intent capture, workflow state, and **enforcement** (each `@secure_tool` call must match the approved plan). It does **not** include a production approval UI or policy engine.
+
+**You must connect your own UX and rules** by subclassing `WorkflowManager` and overriding `get_approval()`. The default implementation auto-approves every workflow so the demo runs without extra setup.
+
+Example:
+
+```python
+from circle_ooak.workflow_manager import WorkflowManager, ManagerResponse
+
+class MyWorkflowManager(WorkflowManager):
+    def __init__(self, approval_client, verbose: bool = False):
+        super().__init__(verbose=verbose)
+        self.approval_client = approval_client
+
+    def get_approval(self, workflow) -> ManagerResponse:
+        # Present workflow.actions to your UI or policy service.
+        # Each action.intent is JSON: function, arguments, and optional instance.
+        approved = self.approval_client.request_user_signoff(
+            wfid=workflow.wfid,
+            intents=[action.intent for action in workflow.actions],
+        )
+        if approved:
+            return ManagerResponse(True, "Approved")
+        return ManagerResponse(False, "User rejected workflow")
+```
+
+Pass your subclass as the runner context (as in `example/run_agent.py`):
+
+```python
+manager = MyWorkflowManager(approval_client=client, verbose=True)
+result = await Runner.run(agent, question, context=manager)
+```
+
+After approval, `WorkflowManager` ensures execution matches the stored intents (tool name, arguments, order) at **start** time. Your `get_approval()` implementation decides **whether** a workflow may run; the manager **enforces** your approvals.
+
+`approve()` validates intent shape (JSON structure and allowed keys). It does not require intents to come from a particular tool call — what matters is the **content** of each intent and whether your user or policy approves it in `get_approval()`.
 
 
 ## Setup Python environment
@@ -153,10 +191,10 @@ python -m pytest test/model_unit_test.py -v
 Here is sample output from one run:
 
 ```shell
-  Ask a question or type 'exit': Have 0x111111 mint 10 USDC to 0x222222 and then have 0x222222 send 5 USDC to 0x333333.
+Have 0x111111 mint 10 USDC to 0x222222 and then have 0x222222 send 5 USDC to 0x333333
 
 LOG: Approving workflow with intents: ['{"function": "mint_usdc", "arguments": {"minter": "0x111111", "receiver": "0x222222", "amount": 10}, "instance": "Secure Agent"}', '{"function": "send_usdc", "arguments": {"sender": "0x222222", "receiver": "0x333333", "amount": 5}, "instance": "Secure Agent"}']
-LOG: Approved workflow f0082344-018c-4d5c-856a-fb8989ab6bf2 with intents: [{"function": "mint_usdc", "arguments": {"minter": "0x111111", "receiver": "0x222222", "amount": 10}, "instance": "Secure Agent"}, {"function": "send_usdc", "arguments": {"sender": "0x222222", "receiver": "0x333333", "amount": 5}, "instance": "Secure Agent"}].
+LOG: Approved workflow e4aef3b4-2e32-47a4-a004-02b755dd62af with intents: [{"function": "mint_usdc", "arguments": {"minter": "0x111111", "receiver": "0x222222", "amount": 10}, "instance": "Secure Agent"}, {"function": "send_usdc", "arguments": {"sender": "0x222222", "receiver": "0x333333", "amount": 5}, "instance": "Secure Agent"}].
 Override this method with your own approval logic.
 
 LOG: Starting action {"function": "mint_usdc", "arguments": {"minter": "0x111111", "receiver": "0x222222", "amount": 10}, "instance": "Secure Agent"}
@@ -168,22 +206,58 @@ Sending 5 USDC from 0x222222 to 0x333333
 LOG: Finished action {"function": "send_usdc", "arguments": {"sender": "0x222222", "receiver": "0x333333", "amount": 5}, "instance": "Secure Agent"} with result txhash=1234567890
 
 LOG: Workflow completed successfully with result txhash=1234567890
-The transactions were successfully executed. Here are the transaction hashes:
+The transactions have been successfully executed:
 
-1. Mint 10 USDC from `0x111111` to `0x222222`: `txhash=0987654321`
-2. Send 5 USDC from `0x222222` to `0x333333`: `txhash=1234567890`
+1. Minting 10 USDC from 0x111111 to 0x222222 was successful with transaction hash: `0987654321`.
+2. Sending 5 USDC from 0x222222 to 0x333333 was successful with transaction hash: `1234567890`.
 
 ```
 
 ## Dev notes
-Functions decorated with `@secure_tool` must include the following two arguments:
-- `wfid: WorkflowId`. Agents will use the workflow id to get permission to perform tasks.
-- `ctxt: RunContextWrapper[SecurityContext]`. The runner must provide an object as context that
-implements the abstract class `SecurityContext` such as the `WorkflowManager` included in this project.
+Functions decorated with `@secure_tool` on an `InstanceAgent` should include `ctxt: RunContextWrapper[SecureContext]` when they need the workflow context. The runner must provide an object that implements `SecureContext` (for example `WorkflowManager`).
+
+OOAK uses a workflow id `wfid` to manage approvals. Do **not** include `wfid` in your Python function signature. Authorization metadata stays in the secure wrapper; your handler only receives arguments in the original function definition.
 
 
+For production use, subclass `WorkflowManager` and override `get_approval()`.
+You may also implement a custom `SecureContext` if you need different before/after hooks than the built-in workflow state machine.
+
+The included `WorkflowManager` is a **reference implementation** for demos and testing. It keeps approved workflows in memory for the life of the process. Production systems should subclass it for persistence, audit logs, branching logic, or other lifecycle needs.
+
+### Start, complete, and fail
+
+Each `@secure_tool` execution with a `wfid` uses three hooks:
+
+| Hook | Role |
+|------|------|
+| `before_invoke_tool` / `start()` | **Authorization** — verify the call matches the approved intent for the current step before the handler runs |
+| Handler | Your business logic |
+| `after_invoke_tool` / `complete()` | **Record success** — store the handler result and advance workflow state. Does not re-authorize; the handler already ran |
+| `on_invoke_tool_failure` / `fail()` | **Record failure** — best-effort transition to `failed` after a handler exception. Always succeeds; it must not leave the workflow stuck |
+
+### Instance identity in intents
+OOAK needs a way to uniquely identify agents for approval. There are two choices:
+- **by name**. When an `InstanceAgent` is initialized with `bind_to_instance=False`, then OOAK identifies the agent using the `name` supplied during object creation. This creates a stable name across restarts.
+- ** by object reference**. When an `InstanceAgent` is initialized with `bind_to_instance=True`, then OOAK identifies the agent
+using the run-time object identifier. This prevents any naming collisions. Agents have new ids after every restart. 
+
+### Side effects and workflow state
+
+OOAK calls `before_invoke_tool` (start) **before** your handler runs, and `after_invoke_tool` (complete) **after** it returns. If your handler performs an irreversible side effect (transfer funds, sign a transaction, call an external API) and then crashes or hangs, OOAK will not know the outcome of the action. It also will not know how to clean up.
+
+**What OOAK does:** the handler call is wrapped in a try/except. If the handler raises, `@secure_tool` calls `on_invoke_tool_failure`, which marks the current action and workflow as `failed`. This prevents a stuck `in_progress` state. It does **not** roll back side effects that already occurred before the exception.
+
+**What integrators should do:**
+
+- **Compensating tools** — write tools that perform their own cleanup on failure (refund, cancel reservation, revert a pending state). 
+- **Two-phase operations** — separate "prepare" and "commit" into different tools or workflow steps so approval covers each phase explicitly.
+- **Custom workflow logic** — subclass `WorkflowManager` or implement `SecureContext` with branching based on reported results (a decision tree), rather than assuming a fixed linear sequence, when your use case requires it.
+
+**Handler hangs and infinite loops:** OOAK does not enforce timeouts on tool handlers. A handler that never returns leaves the workflow step in `in_progress` indefinitely. Use `asyncio.wait_for`, application-level deadlines, or runner/SDK limits in your tool implementations and hosting environment.
+
+### Testing
 Agent tools with the `@secure_tool` or `@agent_tool` decorators can be tested the same way as those with `@function_tool`.
-We include a model unit test file.
+We include a model unit test file. Unit tests do not require an LLM.
 
 ```shell
 python -m pytest test/model_unit_test.py -v

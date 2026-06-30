@@ -24,7 +24,16 @@ import copy
 from typing import Any
 
 class InstanceAgent(Agent):
-    def __init__(self, name: str, instructions: str, model: OpenAIChatCompletionsModel, tools: list[FunctionTool] = None, agent_tools: list[FunctionTool] = None):
+    def __init__(
+        self,
+        name: str,
+        instructions: str,
+        model: OpenAIChatCompletionsModel,
+        tools: list[FunctionTool] = None,
+        agent_tools: list[FunctionTool] = None,
+        bind_to_instance: bool = False,
+    ):
+        self.bind_to_instance = bind_to_instance
         # Handle None or empty cases
         if tools is None:
             tools = []
