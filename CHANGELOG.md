@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.2.0](https://github.com/circlefin/circle-ooak/compare/v0.1.0...v0.2.0) (2026-07-01)
+
+
+### Features
+
+* **v0.2.0:** security upgrade ([#26](https://github.com/circlefin/circle-ooak/issues/26)) ([0c3f333](https://github.com/circlefin/circle-ooak/commit/0c3f333f48e7710c402dbf3b61bf31d97fb312c2))
+
+
+### Miscellaneous Chores
+
+* **ci:** bump GitHub Actions to Node 24 ([#25](https://github.com/circlefin/circle-ooak/issues/25)) ([75a9415](https://github.com/circlefin/circle-ooak/commit/75a941539f18cf8512f85f359b4f9de2b63b70b5))
+* **stepsecurity:** apply security best practices ([#20](https://github.com/circlefin/circle-ooak/issues/20)) ([d69708f](https://github.com/circlefin/circle-ooak/commit/d69708f7229299165e0ce68572827789b5be71c0))
+
 ## 0.1.0 (2025-09-08)
 
 
@@ -25,4 +38,3 @@ This API breaking change closes a security vulnerability by adding intent verifi
 * **Security fix** Fixed vulnerability that allowed LLM to mix-and-match `wfid` and `intent`. This is now checked and enforced by OOAK framework.
 * **Tool failure support** The SecurityContext can supply an optional `on_invoke_tool_failure` hook that runs when a tool raises an exception.
 * **Added `bind_to_instance` on `InstanceAgent`** — optional runtime object id for instance identity to avoid name collisions across agents.
-
