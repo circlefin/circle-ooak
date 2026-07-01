@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/circlefin/circle-ooak/compare/v0.2.0...v0.2.1) (2026-07-01)
+
+
+### Miscellaneous Chores
+
+* **master:** force release ([#28](https://github.com/circlefin/circle-ooak/issues/28)) ([27548ca](https://github.com/circlefin/circle-ooak/commit/27548ca1fc50b74431bef3dba5834c40cc3688df))
+
 ## 0.2.1 (2026-07-01)
 Update to README 
 
@@ -33,4 +40,3 @@ Update to README
 * **TECHOPS-18898:** use conventional commits and attach github release assets ([#9](https://github.com/circlefin/circle-ooak/issues/9)) ([dba08f5](https://github.com/circlefin/circle-ooak/commit/dba08f54b5661a31fead25c94637eb2caeb20644))
 * **TECHOPS-19100:** fix ci ([#10](https://github.com/circlefin/circle-ooak/issues/10)) ([552bde8](https://github.com/circlefin/circle-ooak/commit/552bde8416413efe214eb20562e55d70a3fbe1a9))
 * **TECHOPS-19100:** switch to public worfklow tokens ([#11](https://github.com/circlefin/circle-ooak/issues/11)) ([d0ac119](https://github.com/circlefin/circle-ooak/commit/d0ac119acd17584b1cac9c0f58e08c524be01385))
-
