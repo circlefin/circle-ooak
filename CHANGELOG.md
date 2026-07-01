@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.2.1 (2026-07-01)
+Update to README
+
 ## [0.2.0](https://github.com/circlefin/circle-ooak/compare/v0.1.0...v0.2.0) (2026-07-01)
 
 
@@ -31,10 +34,3 @@
 * **TECHOPS-19100:** fix ci ([#10](https://github.com/circlefin/circle-ooak/issues/10)) ([552bde8](https://github.com/circlefin/circle-ooak/commit/552bde8416413efe214eb20562e55d70a3fbe1a9))
 * **TECHOPS-19100:** switch to public worfklow tokens ([#11](https://github.com/circlefin/circle-ooak/issues/11)) ([d0ac119](https://github.com/circlefin/circle-ooak/commit/d0ac119acd17584b1cac9c0f58e08c524be01385))
 
-## 0.2.0 (2026-06-30)
-This API breaking change closes a security vulnerability by adding intent verification during execution.
-
-* **API breaking change** Tools no longer need to take `wfid` as an argument.
-* **Security fix** Fixed vulnerability that allowed LLM to mix-and-match `wfid` and `intent`. This is now checked and enforced by OOAK framework.
-* **Tool failure support** The SecurityContext can supply an optional `on_invoke_tool_failure` hook that runs when a tool raises an exception.
-* **Added `bind_to_instance` on `InstanceAgent`** — optional runtime object id for instance identity to avoid name collisions across agents.

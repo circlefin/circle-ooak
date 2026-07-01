@@ -13,9 +13,9 @@ This project creates an extension to the OpenAI Agents SDK.
 
 - The `@agent_tool` decorator can be used with object instance methods instead of `@function_tool` which only
 supports static functions. 
-- The `@secure_tool` decorator  can be used instead of the `@agent_tool` decorator
+- The `@secure_tool` decorator can be used instead of the `@agent_tool` decorator
 to add before/after hooks to your tool code. 
-- An `InstanceAgent` that can use `@agent_tool` and `@secure_tool`. An `InstanceAgent` is a subclass of
+- An `InstanceAgent` subclass that can use `@agent_tool` and `@secure_tool`. An `InstanceAgent` is a subclass of
 a regular OpenAI Agents SDK `Agent` and can interact with other agents via handoffs and guardrails.
 
 
@@ -23,16 +23,17 @@ This package includes a `WorkflowManager` that implements the abstract `SecureCo
 that checks that intended actions have been approved.
 
 1. Create intent. The agent calls the @secure_tool function with `wfid=None` argument. Instead of
-executing the function, it returns an intent: a json representation of the function call.
-2. Get Approval. The agent calls the WorkflowManager with a list of intents. The manager invokes `get_approval()` (which you override to connect your UX or policy) and, if approved, returns a WorkflowId.
-3. Execute. The agent now calls the @secure_tools in the correct order with the WorkflowId. The
+executing the function, it returns an intent: a JSON representation of the function call.
+2. Get approval. The agent calls the WorkflowManager with a list of intents. The manager invokes `get_approval()` (which you override to connect your UX or policy) and, if approved, returns a `wfid`.
+3. Execute. The agent now calls the @secure_tools in the correct order with the `wfid`. The
 WorkflowManager ensures that each subsequent function call matches the approved workflow.
 
-Sample code can be found at `https://github.com/circlefin/circle-ooak/example`
+Sample code can be found at https://github.com/circlefin/circle-ooak/tree/master/example
 
 Below is an example of a `WalletWorkflowAgent`.
 
 ```python
+from agents import function_tool, RunContextWrapper, OpenAIChatCompletionsModel
 from circle_ooak.instance_agent import InstanceAgent
 from circle_ooak.secure_tool import secure_tool
 from circle_ooak.workflow_manager import WorkflowManager
@@ -41,11 +42,11 @@ class WalletWorkflowAgent(InstanceAgent):
     instructions = """
     You help users execute Ethereum transactions. Do the following steps to help the user:
     1. Create a workflow of intents by calling each secure tool with wfid=None to get the intents
-    2. Call approve_workflow with the list of intents to get a workflow id 
-    3. Execute the workflow by calling each secure tool again. You MUST include the wfid parameter with the workflow id you got in step 2.
+    2. Call approve_workflow with the list of intents to get a wfid
+    3. Execute the workflow by calling each secure tool again. You MUST include the wfid parameter with the wfid you got in step 2.
     4. Print the final tx hash for every transaction.
     
-    You do not need approval from the user to execute a workflow if you have the workflow id.
+    You do not need approval from the user to execute a workflow if you have the wfid.
     """
     def __init__(self, name: str, model: OpenAIChatCompletionsModel, wallets: dict[str, Wallet]):
         self.wallets = wallets
@@ -56,8 +57,8 @@ class WalletWorkflowAgent(InstanceAgent):
     @function_tool
     def approve_workflow(ctxt: RunContextWrapper[WorkflowManager], workflow: list[str]):
         """Approve a workflow of secure tool calls.
-        workflow: a list of intents (json strings).
-        returns: a string with the workflow id
+        workflow: a list of intents (JSON strings).
+        returns: a string with the wfid
         """
         manager = ctxt.context
         response = manager.approve(workflow)
@@ -131,7 +132,7 @@ Install the `circle-ooak` package and other dependencies:
 
 ```shell
 pip install circle-ooak
-pip install dotenv openai openai-agents
+pip install python-dotenv openai openai-agents
 ```
 
 Alternatively, you can clone the GitHub Repo and install using 
@@ -151,7 +152,7 @@ python -m venv .venv
 # activate the environment
 source .venv/bin/activate
 
-# de-activate the environment
+# deactivate the environment
 deactivate
 ```
 
@@ -163,7 +164,7 @@ Create an `.env` file. You must obtain an OpenAI API key.
 OPENAI_API_KEY=api_key_goes_here
 
 # URL to connect to OpenAI
-OPENAI_URL=https://api.openai.com/v1/models
+OPENAI_URL=https://api.openai.com/v1
 
 # OpenAI model to use
 OPENAI_MODEL=gpt-4o
@@ -177,6 +178,7 @@ You must setup your LLM using the `.env` file to run the demo.
 git clone http://github.com/circlefin/circle-ooak
 cd circle-ooak
 pip install -r requirements.txt
+pip install circle-ooak
 
 # To run a Wallet Workflow Agent 
 python example/run_agent.py
@@ -238,7 +240,7 @@ Each `@secure_tool` execution with a `wfid` uses three hooks:
 ### Instance identity in intents
 OOAK needs a way to uniquely identify agents for approval. There are two choices:
 - **by name**. When an `InstanceAgent` is initialized with `bind_to_instance=False`, then OOAK identifies the agent using the `name` supplied during object creation. This creates a stable name across restarts.
-- ** by object reference**. When an `InstanceAgent` is initialized with `bind_to_instance=True`, then OOAK identifies the agent
+- **by object reference**. When an `InstanceAgent` is initialized with `bind_to_instance=True`, then OOAK identifies the agent
 using the run-time object identifier. This prevents any naming collisions. Agents have new ids after every restart. 
 
 ### Side effects and workflow state
