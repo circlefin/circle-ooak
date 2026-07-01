@@ -77,16 +77,14 @@ class WalletWorkflowAgent(InstanceAgent):
         super().__init__(name=name, instructions=self.instructions, model=model, tools=tools, agent_tools=agent_tools)
 
     @secure_tool
-    # all secure tools must have arguments RunContextWrapper[WorkflowManager] and wfid: str
-    def send_usdc(self, ctxt: RunContextWrapper[WorkflowManager], wfid: str, sender: str, receiver: str, amount: int):
+    def send_usdc(self, ctxt: RunContextWrapper[WorkflowManager], sender: str, receiver: str, amount: int):
         wallet = self.wallets[sender]
         if wallet is None:
             return f"Wallet {sender} not found"
         return wallet.send_usdc(receiver, amount)
 
     @secure_tool
-    # all secure tools must have arguments RunContextWrapper[WorkflowManager] and wfid: str
-    def mint_usdc(self, ctxt: RunContextWrapper[WorkflowManager], wfid: str, minter: str, receiver: str, amount: int):
+    def mint_usdc(self, ctxt: RunContextWrapper[WorkflowManager], minter: str, receiver: str, amount: int):
         wallet = self.wallets[minter]
         if wallet is None:
             return f"Wallet {minter} not found"
